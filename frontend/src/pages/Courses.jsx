@@ -1,5 +1,5 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { LogOut, PlayCircle, Clock, Star } from 'lucide-react';
 
 export default function Courses() {
@@ -51,10 +51,18 @@ export default function Courses() {
       <nav className="bg-brand-dark text-white shadow-lg">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
-            <div className="flex items-center">
+            <div className="flex items-center space-x-8">
               <span className="text-xl font-bold tracking-wider text-brand-orange">
                 Escola<span className="text-white">Idiomas</span>
               </span>
+              <div className="hidden md:flex space-x-4">
+                <span className="bg-white/10 text-brand-orange px-3 py-2 rounded-md font-medium transition-colors cursor-default">
+                  Cursos
+                </span>
+                <Link to="/professores" className="text-gray-300 hover:text-white px-3 py-2 rounded-md font-medium transition-colors">
+                  Professores
+                </Link>
+              </div>
             </div>
             <div className="flex items-center">
               <button 
