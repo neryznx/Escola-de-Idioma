@@ -1,22 +1,27 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { LogOut, Plus, User, Languages } from 'lucide-react';
+import { LogOut, User, Languages, Mail, Award } from 'lucide-react';
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 export default function Teachers() {
   const navigate = useNavigate();
   const [teachers, setTeachers] = useState([]);
-  const [nome, setNome] = useState('');
-  const [idioma, setIdioma] = useState('');
-  const [error, setError] = useState(null);
-  const [success, setSuccess] = useState(null);
+  const [user, setUser] = useState(null);
 
   useEffect(() => {
+    const storedUser = localStorage.getItem('user');
+    if (!storedUser) {
+      navigate('/');
+      return;
+    }
+    setUser(JSON.parse(storedUser));
     fetchTeachers();
   }, []);
 
   const fetchTeachers = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/professores/');
+      const response = await fetch(`${API_URL}/api/professores/`);
       if (response.ok) {
         const data = await response.json();
         setTeachers(data);
@@ -24,46 +29,13 @@ export default function Teachers() {
         console.error('Falha ao buscar professores');
       }
     } catch (err) {
-      console.error('Erro na requisição:', err);
+      console.error('Erro na requisição dos professores:', err);
     }
   };
 
   const handleLogout = () => {
     localStorage.removeItem('user');
     navigate('/');
-  };
-
-  const handleAddTeacher = async (e) => {
-    e.preventDefault();
-    setError(null);
-    setSuccess(null);
-
-    if (!nome || !idioma) {
-      setError('Por favor, preencha todos os campos.');
-      return;
-    }
-
-    try {
-      const response = await fetch('http://localhost:5000/api/professores/', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ nome, idioma }),
-      });
-
-      if (response.ok) {
-        setSuccess('Professor adicionado com sucesso!');
-        setNome('');
-        setIdioma('');
-        fetchTeachers(); // Atualiza a lista
-      } else {
-        const data = await response.json();
-        setError(data.message || 'Erro ao adicionar professor.');
-      }
-    } catch (err) {
-      setError('Erro de conexão ao servidor.');
-    }
   };
 
   return (
@@ -85,7 +57,10 @@ export default function Teachers() {
                 </span>
               </div>
             </div>
-            <div className="flex items-center">
+            <div className="flex items-center space-x-4">
+              <span className="text-sm text-gray-300 hidden sm:inline">
+                Olá, <span className="text-white font-semibold">{user?.nome}</span> ({user?.role === 'professor' ? 'Professor' : 'Aluno'})
+              </span>
               <button 
                 onClick={handleLogout}
                 className="flex items-center space-x-2 text-gray-300 hover:text-white transition-colors px-3 py-2 rounded-md font-medium"
@@ -101,92 +76,49 @@ export default function Teachers() {
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-10">
         <div className="mb-8">
-          <h2 className="text-3xl font-extrabold text-gray-900">Professores</h2>
-          <p className="mt-2 text-gray-600">Gerencie e visualize o corpo docente da escola de idiomas.</p>
+          <h2 className="text-3xl font-extrabold text-gray-900">Nossos Professores</h2>
+          <p className="mt-2 text-gray-600">Conheça o corpo docente qualificado da nossa escola de idiomas.</p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Form Create Teacher */}
-          <div className="lg:col-span-1">
-            <div className="bg-white rounded-xl shadow-md p-6">
-              <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center">
-                <Plus className="w-5 h-5 mr-2 text-brand-orange" />
-                Novo Professor
-              </h3>
-              
-              {error && <div className="mb-4 p-3 bg-red-50 text-red-700 rounded-md text-sm">{error}</div>}
-              {success && <div className="mb-4 p-3 bg-green-50 text-green-700 rounded-md text-sm">{success}</div>}
-
-              <form onSubmit={handleAddTeacher} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Nome</label>
-                  <input
-                    type="text"
-                    value={nome}
-                    onChange={(e) => setNome(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-purple focus:border-brand-purple"
-                    placeholder="Nome do(a) professor(a)"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Idioma</label>
-                  <input
-                    type="text"
-                    value={idioma}
-                    onChange={(e) => setIdioma(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-purple focus:border-brand-purple"
-                    placeholder="Ex: Inglês, Espanhol..."
-                  />
-                </div>
-                <button
-                  type="submit"
-                  className="w-full flex justify-center items-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-brand-orange hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-orange transition-colors"
-                >
-                  Adicionar Professor
-                </button>
-              </form>
-            </div>
+        {teachers.length === 0 ? (
+          <div className="bg-white rounded-xl shadow-md p-12 text-center text-gray-500">
+            Nenhum professor cadastrado ainda.
           </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {teachers.map((teacher) => {
+              // Extract initials for the avatar
+              const initials = teacher.nome
+                .split(' ')
+                .map((n) => n[0])
+                .slice(0, 2)
+                .join('')
+                .toUpperCase();
 
-          {/* List Teachers */}
-          <div className="lg:col-span-2">
-            <div className="bg-white rounded-xl shadow-md overflow-hidden">
-              <div className="p-6 border-b border-gray-200 bg-gray-50">
-                <h3 className="text-lg font-bold text-gray-900">Professores Cadastrados</h3>
-              </div>
-              
-              {teachers.length === 0 ? (
-                <div className="p-8 text-center text-gray-500">
-                  Nenhum professor cadastrado ainda.
+              return (
+                <div key={teacher.id} className="bg-white rounded-xl shadow-md p-6 hover:shadow-lg transition-shadow duration-300 flex flex-col items-center text-center">
+                  <div className="w-20 h-20 bg-brand-purple/10 text-brand-purple rounded-full flex items-center justify-center text-xl font-bold mb-4 border border-brand-purple/20">
+                    {initials || <User className="w-8 h-8" />}
+                  </div>
+                  
+                  <h3 className="text-lg font-bold text-gray-900 mb-1">{teacher.nome}</h3>
+                  
+                  <div className="flex items-center text-sm text-gray-500 mb-3 bg-slate-50 px-3 py-1 rounded-full border border-slate-100">
+                    <Languages className="w-4 h-4 mr-1.5 text-brand-orange" />
+                    <span className="font-semibold text-slate-700">{teacher.idioma}</span>
+                  </div>
+
+                  {teacher.email && (
+                    <div className="flex items-center text-xs text-gray-500 mt-auto pt-4 border-t border-gray-100 w-full justify-center">
+                      <Mail className="w-3.5 h-3.5 mr-1 text-gray-400" />
+                      <span className="truncate max-w-[180px]">{teacher.email}</span>
+                    </div>
+                  )}
                 </div>
-              ) : (
-                <ul className="divide-y divide-gray-200">
-                  {teachers.map((teacher) => (
-                    <li key={teacher.id} className="p-6 hover:bg-gray-50 transition-colors">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-4">
-                          <div className="bg-brand-purple/10 p-3 rounded-full">
-                            <User className="w-6 h-6 text-brand-purple" />
-                          </div>
-                          <div>
-                            <p className="text-sm font-medium text-gray-900">{teacher.nome}</p>
-                            <div className="flex items-center text-sm text-gray-500 mt-1">
-                              <Languages className="w-4 h-4 mr-1 text-gray-400" />
-                              {teacher.idioma}
-                            </div>
-                          </div>
-                        </div>
-                        <div className="text-sm text-gray-400">
-                          ID: {teacher.id}
-                        </div>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
+              );
+            })}
           </div>
-        </div>
+        )}
       </main>
     </div>
   );

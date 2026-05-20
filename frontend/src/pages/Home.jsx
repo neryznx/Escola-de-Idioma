@@ -7,7 +7,8 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 export default function Home() {
   const navigate = useNavigate();
   const [isLogin, setIsLogin] = useState(true);
-  const [formData, setFormData] = useState({ nome: '', email: '', senha: '' });
+  const [role, setRole] = useState('aluno'); // 'aluno' or 'professor'
+  const [formData, setFormData] = useState({ nome: '', email: '', senha: '', idioma: '' });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -20,7 +21,12 @@ export default function Home() {
     setError('');
     setLoading(true);
 
-    const endpoint = isLogin ? '/api/auth/login' : '/api/auth/register';
+    let endpoint = '';
+    if (role === 'aluno') {
+      endpoint = isLogin ? '/api/auth/login' : '/api/auth/register';
+    } else {
+      endpoint = isLogin ? '/api/auth/login-teacher' : '/api/auth/register-teacher';
+    }
     
     try {
       const response = await fetch(`${API_URL}${endpoint}`, {
@@ -32,8 +38,8 @@ export default function Home() {
       const data = await response.json();
       
       if (response.ok) {
-        // Store user info if necessary
-        localStorage.setItem('user', JSON.stringify(data.aluno || data.id));
+        const userData = role === 'aluno' ? (data.aluno || data) : (data.professor || data);
+        localStorage.setItem('user', JSON.stringify({ ...userData, role }));
         navigate('/dashboard');
       } else {
         setError(data.message || 'Erro de autenticação');
@@ -74,13 +80,41 @@ export default function Home() {
               {isLogin ? 'Bem-vindo de volta!' : 'Crie sua conta'}
             </h2>
             <p className="mt-2 text-sm text-gray-600">
-              {isLogin ? 'Faça login para continuar sua jornada.' : 'Cadastre-se para ter acesso a todos os cursos.'}
+              {isLogin 
+                ? `Faça login como ${role === 'aluno' ? 'aluno' : 'professor'} para continuar.` 
+                : `Cadastre-se como ${role === 'aluno' ? 'aluno' : 'professor'} para ter acesso.`}
             </p>
+          </div>
+
+          {/* User Role Selector */}
+          <div className="mt-6 flex bg-gray-200 p-1 rounded-lg border border-gray-300">
+            <button
+              type="button"
+              onClick={() => { setRole('aluno'); setError(''); }}
+              className={`flex-1 py-2 text-sm font-semibold rounded-md transition-all duration-200 ${
+                role === 'aluno'
+                  ? 'bg-white text-brand-purple shadow'
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              Sou Aluno
+            </button>
+            <button
+              type="button"
+              onClick={() => { setRole('professor'); setError(''); }}
+              className={`flex-1 py-2 text-sm font-semibold rounded-md transition-all duration-200 ${
+                role === 'professor'
+                  ? 'bg-white text-brand-purple shadow'
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              Sou Professor
+            </button>
           </div>
 
           <div className="mt-8">
             {error && (
-              <div className="mb-4 bg-red-50 border-l-4 border-red-500 p-4">
+              <div className="mb-4 bg-red-50 border-l-4 border-red-500 p-4 rounded-md">
                 <p className="text-sm text-red-700">{error}</p>
               </div>
             )}
@@ -101,6 +135,26 @@ export default function Home() {
                       onChange={handleChange}
                       className="focus:ring-brand-purple focus:border-brand-purple block w-full pl-10 sm:text-sm border-gray-300 rounded-md py-3 border px-4"
                       placeholder="Seu nome"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {!isLogin && role === 'professor' && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Idioma de Ensino</label>
+                  <div className="mt-1 relative rounded-md shadow-sm">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <User className="h-5 w-5 text-gray-400" />
+                    </div>
+                    <input
+                      name="idioma"
+                      type="text"
+                      required={!isLogin && role === 'professor'}
+                      value={formData.idioma}
+                      onChange={handleChange}
+                      className="focus:ring-brand-purple focus:border-brand-purple block w-full pl-10 sm:text-sm border-gray-300 rounded-md py-3 border px-4"
+                      placeholder="Ex: Inglês, Espanhol, Francês..."
                     />
                   </div>
                 </div>
