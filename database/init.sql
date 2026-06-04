@@ -33,4 +33,12 @@ INSERT INTO cursos (nome, descricao, duracao, nivel, imagem, professor_id) VALUE
 ('Conversação Avançada', 'Aprimore sua fluência com debates, podcasts e vocabulário avançado voltado para negócios.', '60h', 'Avançado', 'https://images.unsplash.com/photo-1543269865-cbf427effbad?q=80&w=2070&auto=format&fit=crop', NULL),
 ('Inglês para Viagens', 'Prepare-se para viajar pelo mundo! Aprenda frases essenciais para aeroportos, hotéis e restaurantes.', '25h', 'Intermediário', 'https://images.unsplash.com/photo-1436491865332-7a61a109cc05?q=80&w=2074&auto=format&fit=crop', NULL);
 
-
+CREATE TABLE IF NOT EXISTS matriculas (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    aluno_id INT NOT NULL,
+    curso_id INT NOT NULL,
+    data_matricula TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (aluno_id) REFERENCES alunos(id) ON DELETE CASCADE,
+    FOREIGN KEY (curso_id) REFERENCES cursos(id) ON DELETE CASCADE,
+    UNIQUE KEY unique_aluno_curso (aluno_id, curso_id)
+);

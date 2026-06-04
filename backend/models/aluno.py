@@ -24,3 +24,17 @@ class AlunoModel:
                 return result
         finally:
             connection.close()
+
+    @staticmethod
+    def get_all_alunos():
+        connection = get_db_connection()
+        try:
+            with connection.cursor() as cursor:
+                sql = "SELECT id, nome, email FROM alunos"
+                cursor.execute(sql)
+                result = cursor.fetchall()
+                if not result:
+                    return []
+                return result
+        finally:
+            connection.close()

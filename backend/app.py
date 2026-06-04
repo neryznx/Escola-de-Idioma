@@ -3,6 +3,9 @@ from flask_cors import CORS
 from routes.auth_routes import auth_bp
 from routes.professor_routes import professor_bp
 from routes.curso_routes import curso_bp
+from routes.aluno_routes import aluno_bp
+from routes.matricula_routes import matricula_bp
+from routes.dashboard_routes import dashboard_bp
 
 app = Flask(__name__)
 CORS(app) # Allow cross-origin requests from frontend
@@ -11,6 +14,9 @@ CORS(app) # Allow cross-origin requests from frontend
 app.register_blueprint(auth_bp, url_prefix='/api/auth')
 app.register_blueprint(professor_bp, url_prefix='/api/professores')
 app.register_blueprint(curso_bp, url_prefix='/api/cursos')
+app.register_blueprint(aluno_bp, url_prefix='/api/alunos')
+app.register_blueprint(matricula_bp, url_prefix='/api/matriculas')
+app.register_blueprint(dashboard_bp, url_prefix='/api/dashboard')
 
 
 @app.route('/api/health')

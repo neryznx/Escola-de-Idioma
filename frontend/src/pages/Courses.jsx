@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { LogOut, PlayCircle, Clock, Star, Plus, X, User } from 'lucide-react';
+import { LogOut, PlayCircle, Clock, Star, Plus, X, User, GraduationCap, Users, BookOpen, CheckCircle, AlertCircle } from 'lucide-react';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
@@ -12,6 +12,15 @@ export default function Courses() {
   const [newCourse, setNewCourse] = useState({ nome: '', descricao: '', duracao: '', nivel: 'Básico', imagem: '' });
   const [error, setError] = useState('');
 
+  // Dashboard & Matriculas state
+  const [stats, setStats] = useState({ total_professores: 0, total_alunos: 0, total_cursos: 0 });
+  const [alunos, setAlunos] = useState([]);
+  const [showMatriculaModal, setShowMatriculaModal] = useState(false);
+  const [matriculaForm, setMatriculaForm] = useState({ alunoId: '', cursoId: '' });
+  const [matriculaError, setMatriculaError] = useState('');
+  const [matriculaSuccess, setMatriculaSuccess] = useState('');
+  const [matriculaLoading, setMatriculaLoading] = useState(false);
+
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
     if (!storedUser) {
@@ -21,6 +30,7 @@ export default function Courses() {
     const parsedUser = JSON.parse(storedUser);
     setUser(parsedUser);
     fetchCourses();
+    fetchStats();
   }, []);
 
   const fetchCourses = async () => {
@@ -34,6 +44,34 @@ export default function Courses() {
       }
     } catch (err) {
       console.error('Erro de conexão ao buscar cursos:', err);
+    }
+  };
+
+  const fetchStats = async () => {
+    try {
+      const response = await fetch(`${API_URL}/api/dashboard/stats`);
+      if (response.ok) {
+        const data = await response.json();
+        setStats(data);
+      } else {
+        console.error('Falha ao buscar estatísticas');
+      }
+    } catch (err) {
+      console.error('Erro de conexão ao buscar estatísticas:', err);
+    }
+  };
+
+  const fetchAlunos = async () => {
+    try {
+      const response = await fetch(`${API_URL}/api/alunos/`);
+      if (response.ok) {
+        const data = await response.json();
+        setAlunos(data);
+      } else {
+        console.error('Falha ao buscar alunos');
+      }
+    } catch (err) {
+      console.error('Erro de conexão ao buscar alunos:', err);
     }
   };
 
@@ -57,12 +95,49 @@ export default function Courses() {
         setShowModal(false);
         setNewCourse({ nome: '', descricao: '', duracao: '', nivel: 'Básico', imagem: '' });
         fetchCourses();
+        fetchStats(); // Atualizar estatísticas após criar curso
       } else {
         const data = await response.json();
         setError(data.message || 'Erro ao criar curso');
       }
     } catch (err) {
       setError('Erro de conexão ao servidor para criar curso');
+    }
+  };
+
+  const handleCreateMatricula = async (e) => {
+    e.preventDefault();
+    setMatriculaError('');
+    setMatriculaSuccess('');
+    setMatriculaLoading(true);
+
+    try {
+      const response = await fetch(`${API_URL}/api/matriculas/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          aluno_id: parseInt(matriculaForm.alunoId, 10),
+          curso_id: parseInt(matriculaForm.cursoId, 10)
+        })
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setMatriculaSuccess(data.message || 'Matrícula efetuada com sucesso!');
+        fetchStats(); // Atualizar estatísticas (por segurança)
+        setMatriculaForm({ alunoId: '', cursoId: '' });
+        setTimeout(() => {
+          setShowMatriculaModal(false);
+          setMatriculaSuccess('');
+        }, 1500);
+      } else {
+        setMatriculaError(data.message || 'Erro ao realizar matrícula');
+      }
+    } catch (err) {
+      setMatriculaError('Erro de conexão ao servidor para realizar matrícula');
+    } finally {
+      setMatriculaLoading(false);
     }
   };
 
@@ -103,23 +178,74 @@ export default function Courses() {
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-10">
-        <div className="flex flex-col md:flex-row md:items-center justify-between mb-8">
+        {/* Dashboard Statistics Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+          {/* Card 1: Professores */}
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 flex items-center justify-between hover:shadow-md transition-all duration-300">
+            <div className="space-y-1">
+              <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Total de Professores</p>
+              <h3 className="text-3xl font-black text-slate-800">{stats.total_professores}</h3>
+            </div>
+            <div className="p-4 bg-purple-50 text-brand-purple rounded-2xl">
+              <GraduationCap className="w-8 h-8" />
+            </div>
+          </div>
+          
+          {/* Card 2: Alunos */}
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 flex items-center justify-between hover:shadow-md transition-all duration-300">
+            <div className="space-y-1">
+              <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Total de Alunos</p>
+              <h3 className="text-3xl font-black text-slate-800">{stats.total_alunos}</h3>
+            </div>
+            <div className="p-4 bg-blue-50 text-blue-600 rounded-2xl">
+              <Users className="w-8 h-8" />
+            </div>
+          </div>
+          
+          {/* Card 3: Cursos */}
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 flex items-center justify-between hover:shadow-md transition-all duration-300">
+            <div className="space-y-1">
+              <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Cursos Disponíveis</p>
+              <h3 className="text-3xl font-black text-slate-800">{stats.total_cursos}</h3>
+            </div>
+            <div className="p-4 bg-orange-50 text-brand-orange rounded-2xl">
+              <BookOpen className="w-8 h-8" />
+            </div>
+          </div>
+        </div>
+
+        <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 border-t border-gray-150 pt-8">
           <div>
             <h2 className="text-3xl font-extrabold text-gray-900">Cursos Disponíveis</h2>
             <p className="mt-2 text-gray-600">Escolha o seu próximo curso e alavanque a sua carreira.</p>
           </div>
-          {user?.role === 'professor' && (
+          <div className="mt-4 md:mt-0 flex flex-wrap gap-3">
             <button
               onClick={() => {
-                setError('');
-                setShowModal(true);
+                setMatriculaError('');
+                setMatriculaSuccess('');
+                setMatriculaForm({ alunoId: '', cursoId: '' });
+                fetchAlunos();
+                setShowMatriculaModal(true);
               }}
-              className="mt-4 md:mt-0 flex items-center justify-center py-2.5 px-4 border border-transparent rounded-lg shadow-md text-sm font-semibold text-white bg-brand-purple hover:bg-purple-700 focus:outline-none transition-all"
+              className="flex items-center justify-center py-2.5 px-4 border border-brand-purple rounded-lg shadow-sm text-sm font-semibold text-brand-purple bg-white hover:bg-purple-50 focus:outline-none transition-all"
             >
-              <Plus className="w-5 h-5 mr-2" />
-              Novo Curso
+              <Users className="w-5 h-5 mr-2" />
+              Nova Matrícula
             </button>
-          )}
+            {user?.role === 'professor' && (
+              <button
+                onClick={() => {
+                  setError('');
+                  setShowModal(true);
+                }}
+                className="flex items-center justify-center py-2.5 px-4 border border-transparent rounded-lg shadow-md text-sm font-semibold text-white bg-brand-purple hover:bg-purple-700 focus:outline-none transition-all"
+              >
+                <Plus className="w-5 h-5 mr-2" />
+                Novo Curso
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Course Grid */}
@@ -274,6 +400,100 @@ export default function Courses() {
                   className="px-4 py-2 border border-transparent rounded-lg text-sm font-medium text-white bg-brand-purple hover:bg-purple-700 focus:outline-none"
                 >
                   Criar Curso
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal para matrícula de aluno (Nova Matrícula) */}
+      {showMatriculaModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden animate-in fade-in zoom-in duration-200">
+            <div className="flex justify-between items-center px-6 py-4 border-b border-gray-100 bg-gray-50">
+              <h3 className="text-lg font-bold text-gray-900">Matricular Aluno em Curso</h3>
+              <button 
+                onClick={() => setShowMatriculaModal(false)}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+            
+            {matriculaError && (
+              <div className="m-4 bg-red-50 border-l-4 border-red-500 p-3 rounded text-sm text-red-700 flex items-start">
+                <AlertCircle className="w-5 h-5 mr-2 shrink-0 text-red-500" />
+                <span>{matriculaError}</span>
+              </div>
+            )}
+
+            {matriculaSuccess && (
+              <div className="m-4 bg-green-50 border-l-4 border-green-500 p-3 rounded text-sm text-green-700 flex items-start">
+                <CheckCircle className="w-5 h-5 mr-2 shrink-0 text-green-500" />
+                <span>{matriculaSuccess}</span>
+              </div>
+            )}
+
+            <form onSubmit={handleCreateMatricula} className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Buscar e Selecionar Aluno *</label>
+                <select
+                  required
+                  value={matriculaForm.alunoId}
+                  onChange={(e) => setMatriculaForm({ ...matriculaForm, alunoId: e.target.value })}
+                  className="w-full px-3.5 py-2 border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-brand-purple focus:border-brand-purple"
+                >
+                  <option value="">Selecione um aluno...</option>
+                  {alunos.map((aluno) => (
+                    <option key={aluno.id} value={aluno.id}>
+                      {aluno.nome} ({aluno.email})
+                    </option>
+                  ))}
+                </select>
+                {alunos.length === 0 && (
+                  <p className="text-xs text-amber-600 mt-1">
+                    Nenhum aluno cadastrado no sistema.
+                  </p>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Buscar e Selecionar Curso *</label>
+                <select
+                  required
+                  value={matriculaForm.cursoId}
+                  onChange={(e) => setMatriculaForm({ ...matriculaForm, cursoId: e.target.value })}
+                  className="w-full px-3.5 py-2 border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-brand-purple focus:border-brand-purple"
+                >
+                  <option value="">Selecione um curso...</option>
+                  {courses.map((course) => (
+                    <option key={course.id} value={course.id}>
+                      {course.nome} ({course.nivel})
+                    </option>
+                  ))}
+                </select>
+                {courses.length === 0 && (
+                  <p className="text-xs text-amber-600 mt-1">
+                    Nenhum curso cadastrado ainda.
+                  </p>
+                )}
+              </div>
+
+              <div className="pt-4 border-t border-gray-100 flex justify-end space-x-3">
+                <button
+                  type="button"
+                  onClick={() => setShowMatriculaModal(false)}
+                  className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={matriculaLoading || !matriculaForm.alunoId || !matriculaForm.cursoId}
+                  className="px-4 py-2 border border-transparent rounded-lg text-sm font-medium text-white bg-brand-purple hover:bg-purple-700 focus:outline-none disabled:opacity-50 transition-colors"
+                >
+                  {matriculaLoading ? 'Confirmando...' : 'Confirmar Inscrição'}
                 </button>
               </div>
             </form>
